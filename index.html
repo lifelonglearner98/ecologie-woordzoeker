@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ecologie Woordzoeker – Biologie VMBO-2</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #064e3b 0%, #065f46 40%, #047857 100%);
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+      user-select: none;
+      overflow-x: hidden;
+    }
+    .leaf {
+      position: fixed;
+      font-size: 2rem;
+      opacity: 0.12;
+      pointer-events: none;
+    }
+    header { text-align: center; margin-bottom: 20px; }
+    header .icon { font-size: 2rem; margin-bottom: 4px; }
+    h1 {
+      color: #d1fae5;
+      font-size: 1.6rem;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .subtitle {
+      color: #6ee7b7;
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      margin-top: 4px;
+    }
+    #word-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 20px;
+      max-width: 560px;
+    }
+    .word-chip {
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      border: 2px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.12);
+      color: #a7f3d0;
+      transition: all 0.3s;
+    }
+    .word-chip.found {
+      color: #fff;
+      text-decoration: line-through;
+    }
+    #grid-wrapper {
+      background: rgba(0,0,0,0.25);
+      border-radius: 16px;
+      padding: 12px;
+      border: 2px solid rgba(255,255,255,0.1);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      transition: all 0.15s;
+    }
+    #grid-wrapper.wrong {
+      background: rgba(239,68,68,0.2);
+      border-color: #ef4444;
+    }
+    #grid {
+      display: grid;
+      gap: 3px;
+    }
+    .cell {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      background: rgba(255,255,255,0.07);
+      color: #d1fae5;
+      border: 2px solid transparent;
+      transition: all 0.1s;
+    }
+    .cell.selecting {
+      background: rgba(251,191,36,0.8);
+      color: #1a1a1a;
+      transform: scale(1.1);
+      border-color: #fbbf24;
+      box-shadow: 0 2px 8px rgba(251,191,36,0.5);
+    }
+    .footer {
+      margin-top: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    #progress {
+      background: rgba(0,0,0,0.2);
+      border-radius: 20px;
+      padding: 4px 16px;
+      color: #6ee7b7;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    #reset-btn {
+      background: rgba(255,255,255,0.1);
+      border: 2px solid rgba(255,255,255,0.2);
+      color: #a7f3d0;
+      border-radius: 20px;
+      padding: 4px 16px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    #reset-btn:hover { background: rgba(255,255,255,0.2); }
+    #overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      animation: fadeIn 0.4s ease;
+    }
+    #overlay.show { display: flex; }
+    .modal {
+      background: linear-gradient(135deg, #065f46, #047857);
+      border-radius: 24px;
+      padding: 40px 48px;
+      text-align: center;
+      border: 3px solid #34d399;
+      box-shadow: 0 0 60px rgba(52,211,153,0.4);
+      animation: pop 0.5s ease;
+    }
+    .modal .emoji { font-size: 3rem; margin-bottom: 12px; }
+    .modal h2 { color: #d1fae5; font-size: 1.8rem; font-weight: 900; margin-bottom: 8px; }
+    .modal p { color: #6ee7b7; margin-bottom: 24px; }
+    .modal button {
+      background: #34d399;
+      border: none;
+      border-radius: 20px;
+      padding: 10px 28px;
+      font-size: 1rem;
+      font-weight: 800;
+      color: #064e3b;
+      cursor: pointer;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes pop { 0% { transform: scale(0.5); } 80% { transform: scale(1.1); } 100% { transform: scale(1); } }
+  </style>
+</head>
+<body>
+
+  <div class="leaf" style="top:10%;left:3%;transform:rotate(0deg)">🌿</div>
+  <div class="leaf" style="top:28%;left:94%;transform:rotate(37deg)">🍃</div>
+  <div class="leaf" style="top:46%;left:3%;transform:rotate(74deg)">🌱</div>
+  <div class="leaf" style="top:64%;left:94%;transform:rotate(111deg)">🌿</div>
+  <div class="leaf" style="top:82%;left:3%;transform:rotate(148deg)">🍀</div>
+
+  <header>
+    <div class="icon">🔬</div>
+    <h1>ECOLOGIE WOORDZOEKER</h1>
+    <p class="subtitle">BIOLOGIE · VMBO-2</p>
+  </header>
+
+  <div id="word-list"></div>
+  <div id="grid-wrapper"><div id="grid"></div></div>
+
+  <div class="footer">
+    <div id="progress">0 / 6 gevonden</div>
+    <button id="reset-btn" onclick="initGame()">🔄 Opnieuw</button>
+  </div>
+
+  <div id="overlay">
+    <div class="modal">
+      <div class="emoji">🎉🌿🎉</div>
+      <h2>Gefeliciteerd!</h2>
+      <p>Je hebt alle woorden gevonden!</p>
+      <button onclick="initGame(); document.getElementById('overlay').classList.remove('show')">Nog een keer spelen</button>
+    </div>
+  </div>
+
+  <script>
+    const WORDS = ["MILIEU","BIOTISCH","ABIOTISCH","INDIVIDU","POPULATIE","ECOSYSTEEM"];
+    const GRID_SIZE = 14;
+    const WORD_COLORS = {
+      MILIEU:"#22c55e", BIOTISCH:"#3b82f6", ABIOTISCH:"#f59e0b",
+      INDIVIDU:"#ec4899", POPULATIE:"#8b5cf6", ECOSYSTEEM:"#06b6d4"
+    };
+    const DIRS = [[0,1],[1,0],[1,1],[0,-1],[-1,0],[-1,-1],[1,-1],[-1,1]];
+
+    let grid, placed, found, foundCells, selecting, selStart, selCurrent;
+
+    function generateGrid() {
+      grid = Array.from({length:GRID_SIZE}, () => Array(GRID_SIZE).fill(""));
+      placed = [];
+      const shuffle = a => a.sort(() => Math.random()-0.5);
+      shuffle([...WORDS]).forEach(word => {
+        const dirs = shuffle([...DIRS]);
+        for (let att=0; att<200; att++) {
+          const [dr,dc] = dirs[att % dirs.length];
+          const r = Math.floor(Math.random()*GRID_SIZE);
+          const c = Math.floor(Math.random()*GRID_SIZE);
+          const er = r+dr*(word.length-1), ec = c+dc*(word.length-1);
+          if (er<0||er>=GRID_SIZE||ec<0||ec>=GRID_SIZE) continue;
+          let ok=true;
+          for (let i=0;i<word.length;i++) {
+            const gr=r+dr*i, gc=c+dc*i;
+            if (grid[gr][gc]!==""&&grid[gr][gc]!==word[i]){ok=false;break;}
+          }
+          if (ok) {
+            const coords=[];
+            for (let i=0;i<word.length;i++){const gr=r+dr*i,gc=c+dc*i;grid[gr][gc]=word[i];coords.push([gr,gc]);}
+            placed.push({word,coords});
+            break;
+          }
+        }
+      });
+      const abc="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      for (let r=0;r<GRID_SIZE;r++) for (let c=0;c<GRID_SIZE;c++)
+        if (!grid[r][c]) grid[r][c]=abc[Math.floor(Math.random()*abc.length)];
+    }
+
+    function getLine(r1,c1,r2,c2) {
+      const dr=r2-r1, dc=c2-c1, len=Math.max(Math.abs(dr),Math.abs(dc));
+      if (len===0) return [[r1,c1]];
+      if (Math.abs(dr)!==0&&Math.abs(dc)!==0&&Math.abs(dr)!==Math.abs(dc)) return null;
+      const sr=dr===0?0:dr/Math.abs(dr), sc=dc===0?0:dc/Math.abs(dc);
+      const cells=[];
+      for (let i=0;i<=len;i++) cells.push([r1+sr*i,c1+sc*i]);
+      return cells;
+    }
+
+    function buildWordList() {
+      const wl = document.getElementById("word-list");
+      wl.innerHTML="";
+      WORDS.forEach(w => {
+        const chip=document.createElement("div");
+        chip.className="word-chip"+(found.includes(w)?" found":"");
+        chip.id="chip-"+w;
+        chip.textContent=(found.includes(w)?"✓ ":"")+w;
+        if (found.includes(w)) {
+          chip.style.background=WORD_COLORS[w];
+          chip.style.borderColor=WORD_COLORS[w];
+          chip.style.boxShadow=`0 0 12px ${WORD_COLORS[w]}88`;
+        }
+        wl.appendChild(chip);
+      });
+    }
+
+    function renderGrid(selCells=[]) {
+      const g=document.getElementById("grid");
+      g.style.gridTemplateColumns=`repeat(${GRID_SIZE}, 32px)`;
+      g.innerHTML="";
+      for (let r=0;r<GRID_SIZE;r++) for (let c=0;c<GRID_SIZE;c++) {
+        const cell=document.createElement("div");
+        cell.className="cell";
+        cell.textContent=grid[r][c];
+        cell.dataset.r=r; cell.dataset.c=c;
+        // Found coloring
+        let foundColor=null;
+        for (const {word,coords} of placed) {
+          if (found.includes(word)&&coords.some(([fr,fc])=>fr===r&&fc===c)) { foundColor=WORD_COLORS[word]; break; }
+        }
+        if (foundColor) {
+          cell.style.background=foundColor;
+          cell.style.color="#fff";
+          cell.style.boxShadow=`0 0 8px ${foundColor}99`;
+        } else if (selCells.some(([sr,sc])=>sr===r&&sc===c)) {
+          cell.classList.add("selecting");
+        }
+        cell.addEventListener("mousedown", onMouseDown);
+        cell.addEventListener("mouseenter", onMouseEnter);
+        g.appendChild(cell);
+      }
+    }
+
+    function onMouseDown(e) {
+      selecting=true;
+      selStart=[+e.currentTarget.dataset.r,+e.currentTarget.dataset.c];
+      selCurrent=selStart;
+      renderGrid(getLine(...selStart,...selCurrent)||[selStart]);
+    }
+    function onMouseEnter(e) {
+      if (!selecting) return;
+      selCurrent=[+e.currentTarget.dataset.r,+e.currentTarget.dataset.c];
+      const line=getLine(...selStart,...selCurrent);
+      renderGrid(line||[selStart]);
+    }
+    function onMouseUp() {
+      if (!selecting) return;
+      selecting=false;
+      const line=getLine(...selStart,...selCurrent);
+      if (line&&line.length>1) {
+        const attempt=line.map(([r,c])=>grid[r][c]).join("");
+        const rev=attempt.split("").reverse().join("");
+        let matched=false;
+        for (const {word,coords} of placed) {
+          if ((word===attempt||word===rev)&&!found.includes(word)) {
+            found.push(word);
+            foundCells.push(...coords);
+            matched=true;
+            break;
+          }
+        }
+        if (!matched) {
+          const gw=document.getElementById("grid-wrapper");
+          gw.classList.add("wrong");
+          setTimeout(()=>gw.classList.remove("wrong"),500);
+        }
+      }
+      renderGrid();
+      buildWordList();
+      document.getElementById("progress").textContent=`${found.length} / ${WORDS.length} gevonden`;
+      if (found.length===WORDS.length) setTimeout(()=>document.getElementById("overlay").classList.add("show"),400);
+    }
+
+    window.addEventListener("mouseup", onMouseUp);
+
+    function initGame() {
+      found=[]; foundCells=[]; selecting=false; selStart=null; selCurrent=null;
+      generateGrid();
+      renderGrid();
+      buildWordList();
+      document.getElementById("progress").textContent=`0 / ${WORDS.length} gevonden`;
+      document.getElementById("overlay").classList.remove("show");
+    }
+
+    initGame();
+  </script>
+</body>
+</html>
